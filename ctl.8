@@ -1,0 +1,90 @@
+.TH ctl 8
+.SH NAME
+ctl
+.SH SYNOPSIS
+.nf
+.B ctl  [-rwqh?ta] [-T TOTAL] [-s SKIP] [-k KEY] /dev/DEVICE
+.fi
+.SH DESCRIPTION
+The \fBctl\fP ctl is a tool for testing the data integrity of a 
+storage target. Ctl runs very fast and operates directly on Linux
+block devices. In typical use ctl is used to alternates between
+writing a constant key and the sector number across an entire target.
+
+.SS Options
+.TP
+\fB-r\fP
+The -r flag starts \fBctl\fP in read (verify) mode
+.TP
+\fB-q\fP
+The -q flag supresses status information during runtime
+.TP
+\fB-t\fP
+The -t flag causes \fBctl\fP to show the read/write rate
+.TP
+\fB-a\fP
+The -a prevents \fBctl\fP from exiting when it finds an error.  Otherwise it exits on the first error found.
+.TP
+\fB-T\fP SIZE
+total SIZE to write
+.TP
+\fB-s\fP
+start at this sector offest
+.TP
+\fB-k\fP KEY
+write a KEY, an  unsigned long long integer along with sector offset information in each sector. You may use hex format, e.g. 0xDEADB10C. The default for the -k option is 0. if -k switch not present.
+
+.TP
+\fB-q\fP
+
+.SH NOTES
+The program ctl can verify every sector. Useful test scenarios:
+
+For CoW backed block systems:
+Write a unique key to a block device.
+Clone/snap the block device.
+Verify the contents of both block device (i.e. the keys must match).
+Write a new key to either block device.
+Verify that both block device have their proper key.
+From this basic example mirroring, ha, shadowing, etc can be tested.
+ 
+For mirror sets 
+Use ctl to write/read to a mirror and then offline one PV.
+Use ctl to verify that snap shadow contents match the original.
+Use ctl's -s and -T options, explained below, to test resizing.
+
+The program is also easy to script as the exit code is non-zero on error.
+# ctl -w -k 43 /dev/etherd/e61.3 
+beginning pattern write at sector 0 for 9765501 sectors
+write complete
+# echo $?
+0
+# ctl -r -k 43 /dev/etherd/e61.3 
+begin data verification at sector 0 for 9765501 sectors
+verify complete
+# echo $?
+0
+# ctl -r -k 4 /dev/etherd/e61.3 
+begin data verification at sector 0 for 9765501 sectors
+key mismatch error 43 != 4 at offset 0
+Failed.
+# echo $?
+250
+# 
+The third ctl run prints an error message and signals error with the exit code.
+.SH EXAMPLE
+.EX
+.nf
+# ctl -w -k 43 /dev/sda 
+beginning pattern write at sector 0 for 9765501 sectors
+write complete
+# 
+.fi
+.EE
+.LP
+.SH AUTHORS
+Justin Sanders
+Chris Vitale
+Sam Hopkins
+Michaelian Ennis
+Derek Carter
